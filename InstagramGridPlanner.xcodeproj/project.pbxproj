@@ -14,9 +14,7 @@
 		A10000000000000000000D1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Services/.gitkeep,
 				Utilities/.gitkeep,
-				ViewModels/.gitkeep,
 			);
 			target = A10000000000000000000A6 /* InstagramGridPlanner */;
 		};

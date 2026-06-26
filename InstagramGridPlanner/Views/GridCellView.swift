@@ -1,33 +1,68 @@
 import SwiftUI
 
-/// One tile in the grid. Renders a placeholder (no real media yet — local
-/// files arrive in Phase 4, Instagram thumbnails in Phase 9/12) and marks
-/// locked Instagram items. The parent grid sizes the tile to the tab's
-/// portrait aspect ratio; this view just fills whatever space it is given.
+/// One tile in the grid. Shows the imported local image when available,
+/// otherwise a placeholder (Instagram thumbnails arrive in Phase 9/12), and
+/// marks locked Instagram items. The parent grid sizes the tile to the tab's
+/// portrait aspect ratio; this view fills whatever space it is given.
 struct GridCellView: View {
     let item: GridItem
 
+    @State private var loadedImage: UIImage?
+
     var body: some View {
-        ZStack {
-            tint
-            // Image placeholder — no real media yet (local files arrive in
-            // Phase 4, Instagram thumbnails in Phase 9/12). Posted vs. planned
-            // are distinguished by tint and the lock badge, not by this icon.
-            Image(systemName: "photo")
-                .font(.title2)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .overlay(alignment: .topTrailing) {
-            if item.isLocked {
-                Image(systemName: "lock.fill")
-                    .font(.caption)
-                    .foregroundStyle(.white)
-                    .padding(4)
-                    .background(.black.opacity(0.5), in: Circle())
-                    .padding(4)
+        content
+            // Fill the tile the parent grid sized us to, then clip so a
+            // cover-scaled image can never overflow its box.
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
+            .contentShape(Rectangle())
+            .overlay(alignment: .topTrailing) {
+                if item.isLocked {
+                    Image(systemName: "lock.fill")
+                        .font(.caption)
+                        .foregroundStyle(.white)
+                        .padding(4)
+                        .background(.black.opacity(0.5), in: Circle())
+                        .padding(4)
+                }
+            }
+            .task(id: item.id) {
+                await loadLocalImage()
+            }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if let loadedImage {
+            // Cover the tile, centered, without distortion: the clear base
+            // takes the cell's size, the image fills it, the cell clips it.
+            Color.clear
+                .overlay {
+                    Image(uiImage: loadedImage)
+                        .resizable()
+                        .scaledToFill()
+                }
+        } else {
+            ZStack {
+                tint
+                // Placeholder when there is no local image to show. Posted vs.
+                // planned are distinguished by tint and the lock badge.
+                Image(systemName: "photo")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private func loadLocalImage() async {
+        guard let url = LocalStorageService.shared.imageURL(for: item) else {
+            loadedImage = nil
+            return
+        }
+        let image = await Task.detached(priority: .utility) {
+            UIImage(contentsOfFile: url.path)
+        }.value
+        loadedImage = image
     }
 
     /// Locked Instagram items and unlocked local items get distinct tints so
