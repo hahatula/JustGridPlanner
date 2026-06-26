@@ -55,19 +55,21 @@ When refreshing Instagram data:
 
 3. Keep all local planned items.
 
-4. Re-merge posted and planned items.
+4. Re-merge posted and planned items, keeping the local planned items on top (above the posted Instagram items).
 
 5. Do not delete local planned items.
+
+Local planned items represent the user's next posts, so they always sit at the top of the grid. Newly fetched Instagram posts are inserted below the planned block.
 
 Example:
 
 Before refresh:
 
-[IG-3, IG-2, IG-1, LOCAL-A, LOCAL-B]
+[LOCAL-A, LOCAL-B, IG-3, IG-2, IG-1]
 
 After one new Instagram post is detected:
 
-[IG-4, IG-3, IG-2, IG-1, LOCAL-A, LOCAL-B]
+[LOCAL-A, LOCAL-B, IG-4, IG-3, IG-2, IG-1]
 
 ## Restrictions
 

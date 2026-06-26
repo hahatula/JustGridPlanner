@@ -1,19 +1,22 @@
 import SwiftUI
 
-/// Placeholder for the Posts grid. Phase 3 replaces the body with the
-/// real 3-column grid; the surrounding `NavigationStack` is kept now so
-/// that change does not require re-wrapping.
+/// Posts tab: the 3-column grid for `GridType.posts`. Seeds from `SampleData`
+/// in DEBUG; real items arrive via gallery import (Phase 4) and Instagram
+/// sync (Phase 9).
 struct PostsGridView: View {
     var body: some View {
         NavigationStack {
-            VStack(spacing: 8) {
-                Text("Posts")
-                    .font(.title)
-                Text("Coming soon")
-                    .foregroundStyle(.secondary)
-            }
-            .navigationTitle("Posts")
+            GridPlannerView(gridType: .posts, items: items)
+                .navigationTitle("Posts")
         }
+    }
+
+    private var items: [GridItem] {
+        #if DEBUG
+        SampleData.posts
+        #else
+        []
+        #endif
     }
 }
 

@@ -26,6 +26,8 @@ Use two tabs:
 
 - Instagram-like visual preview
 
+- Portrait tiles, not squares: Posts use a 3:4 aspect ratio, Reels use 9:16 (matching Instagram's profile grid)
+
 - Posted items and planned items should look visually different
 
 - Posted items should show a lock indicator

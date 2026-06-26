@@ -41,3 +41,28 @@ The username must be stored locally and normalized without `@`.
 The app must not store Instagram passwords or use scraping.
 
 If the official Instagram API cannot fetch public media directly by arbitrary username, the app must keep the same product UX while hiding implementation details behind `InstagramSyncService`.
+
+## Decision 006: Grid Tiles Are Portrait, Not Square
+
+The grid uses portrait tiles to match Instagram's current profile grid:
+
+- Posts grid: 3:4 aspect ratio
+- Reels grid: 9:16 aspect ratio (reel cover)
+
+Reasoning:
+
+- Instagram replaced the old 1:1 square thumbnails with 3:4 portrait thumbnails for profile posts; reels are shown as 9:16 covers.
+- The app's purpose is to preview how the grid will look before posting, so the tile shape must match what Instagram actually renders.
+
+The aspect ratio is a presentation concern, derived from the grid type in the view layer; it is not stored on the data model.
+
+## Decision 007: Local Planned Items Appear on Top
+
+Local planned items are shown at the top of the grid, above the already-posted Instagram items. Newly added items are inserted at the top; an Instagram refresh inserts fetched posts below the planned block and never reorders the planned items above them.
+
+Reasoning:
+
+- Planned items represent the user's next posts. When posted, they become the newest media and appear at the top-left of the Instagram grid, so the planning preview must show them on top.
+- Posting affordances (e.g. "add from gallery") must live outside the grid (e.g. a toolbar button), never as interactive cells inside the grid, so the preview is not polluted by controls.
+
+This supersedes the earlier examples that showed planned items at the bottom of the refresh merge.

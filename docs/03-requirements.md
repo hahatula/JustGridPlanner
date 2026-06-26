@@ -31,7 +31,7 @@ The app must provide a Posts tab.
 The Posts tab must:
 
 - Display a 3-column Instagram-like grid
-- Use square visual cells
+- Use a 3:4 portrait aspect ratio
 - Show already-posted Instagram posts
 - Allow local planned images to be added from the iPhone gallery
 - Allow local planned images to be reordered by drag
@@ -44,7 +44,8 @@ The app must provide a Reels tab.
 
 The Reels tab must:
 
-- Display a grid for reels planning
+- Display a 3-column grid for reels planning
+- Use a 9:16 portrait aspect ratio (reel cover)
 - Show already-posted Instagram reels
 - Allow local planned reel images or thumbnails to be added from the iPhone gallery
 - Allow local planned items to be reordered by drag
@@ -79,6 +80,7 @@ Refresh must:
 - Fetch current posted Instagram media
 - Replace/update Instagram-posted items
 - Keep all manually added local items
+- Keep manually added local items on top (above posted Instagram items)
 - Preserve the user’s planned local order as much as possible
 - Never delete local planned images
 
@@ -86,11 +88,11 @@ Example:
 
 Before refresh:
 
-text [IG-3, IG-2, IG-1, LOCAL-A, LOCAL-B] 
+text [LOCAL-A, LOCAL-B, IG-3, IG-2, IG-1] 
 
 After a new Instagram post appears:
 
-text [IG-4, IG-3, IG-2, IG-1, LOCAL-A, LOCAL-B] 
+text [LOCAL-A, LOCAL-B, IG-4, IG-3, IG-2, IG-1] 
 
 ## Instagram Account Selection
 
