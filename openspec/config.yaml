@@ -1,0 +1,63 @@
+schema: spec-driven
+
+context: |
+  This is a private native iOS SwiftUI app for planning Instagram grids.
+  The source of truth for product context is in /docs.
+  Agents must also follow /AGENTS.md.
+
+  Before creating or editing OpenSpec artifacts, read:
+  - /AGENTS.md
+  - /docs/00-project-brief.md
+  - /docs/01-business-logic.md
+  - /docs/02-tech-stack.md
+  - /docs/03-requirements.md
+  - /docs/04-architecture.md
+  - /docs/05-data-model.md
+  - /docs/06-ui-ux-rules.md
+  - /docs/07-agent-workflow.md
+  - /docs/08-task-breakdown.md
+  - /docs/09-testing-strategy.md
+  - /docs/10-decisions.md
+  - /docs/11-out-of-scope.md
+
+rules:
+  implementation_awareness:
+    - Before proposing or applying a change, inspect the current codebase.
+    - Specs and tasks must reflect what is already implemented.
+    - Do not create duplicate models, services, views, or storage layers.
+    - Prefer extending existing code over rewriting it.
+    - Do not refactor unrelated code unless explicitly approved.
+    - If existing code conflicts with docs, stop and report the conflict before changing it.
+    
+  clarification:
+    - Ask clarification questions before creating proposals when requirements are ambiguous.
+    - Do not resolve product, architecture, storage, Instagram, or UI behavior by guessing.
+    - If docs and existing code conflict, stop and report the conflict.
+    - If making a minor non-blocking assumption, write it in the proposal or design.
+    - Include an "Open Questions" section in proposals when anything is unclear.
+    
+  proposal:
+    - Keep proposals small and implementation-focused.
+    - One OpenSpec change should map to one phase or one clear sub-feature from /docs/08-task-breakdown.md.
+    - Always include a Non-goals section.
+    - Do not propose features listed in /docs/11-out-of-scope.md.
+    - Do not change the tech stack without explicit approval.
+
+  design:
+    - Explain only the design needed for this change.
+    - Reference existing docs instead of repeating them.
+    - Keep Instagram integration behind an InstagramSyncService boundary.
+    - Do not use scraping, browser automation, password storage, or unofficial Instagram APIs.
+
+  tasks:
+    - Break tasks into small steps.
+    - Each task should be manually testable.
+    - Do not include tasks for later phases.
+    - Include acceptance criteria.
+    - Include manual test steps.
+
+  specs:
+    - Use clear MUST / SHOULD language.
+    - Write requirements that are testable.
+    - Include locked Instagram item behavior where relevant.
+    - Include local planned item preservation where relevant.
