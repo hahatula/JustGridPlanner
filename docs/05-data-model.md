@@ -33,6 +33,11 @@ isLocked is derived from source:
 
 Do not store business rules in UI components.
 
+Posted (instagram) items imported via the manual screenshot import
+(`/docs/10-decisions.md` Decision 008) are backed by a `localImagePath` pointing
+to a cropped tile, rather than a remote `thumbnailURL`. They remain locked
+(source == instagram) but persist locally because their image lives on device.
+
 Example:
 {
   "id": "local-001",

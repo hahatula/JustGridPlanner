@@ -50,11 +50,11 @@ Use PhotosPicker.
 
 ## Networking
 
-Use URLSession for future Instagram API sync.
+No networking is required for the chosen approach: posted media is imported from a user screenshot (`/docs/10-decisions.md` Decision 008). URLSession is reserved only for an optional future real Instagram API sync.
 
 ## Authentication
 
-Only needed if Instagram official API sync is implemented.
+Not required. The manual screenshot import needs no login. Authentication (OAuth) would only be needed for the optional future official Instagram API path.
 
 ## Not Chosen
 

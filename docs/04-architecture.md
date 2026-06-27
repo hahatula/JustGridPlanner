@@ -10,7 +10,7 @@ The app is a local-first SwiftUI iOS app.
 
 3. Local storage services
 
-4. Optional Instagram sync service
+4. Instagram sync service (manual screenshot import; see `/docs/10-decisions.md` Decision 008)
 
 ## Suggested Folder Structure
 
@@ -84,10 +84,27 @@ Responsibilities:
 
 ### InstagramSyncService
 
+Boundary for obtaining already-posted Instagram media. The primary implementation
+is a manual screenshot import (`/docs/10-decisions.md` Decision 008); a real-API
+implementation remains a possible future option behind the same interface
+(Decision 004).
+
 Responsibilities:
 
-- Fetch posted media from Instagram API
+- Provide posted media for a grid (from the manual screenshot import, or a real API later)
 
-- Convert API response into locked grid items
+- Convert the source media into locked grid items (`source = instagram`)
 
 - Not responsible for UI ordering
+
+### ScreenshotImportView (and tile splitter)
+
+Responsibilities:
+
+- Open the Instagram profile and guide the user to screenshot the 3×3 grid
+
+- Import a screenshot via PhotosPicker (no photo-library permission prompt)
+
+- Show a draggable 3×3 overlay and split the cropped region into 9 tile images
+
+- Hand the split tiles to the `InstagramSyncService` boundary as locked posted items backed by local image files

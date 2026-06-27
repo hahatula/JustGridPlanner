@@ -12,9 +12,9 @@ The app is for personal use only and will not be published, sold, or distributed
 
 ### Instagram Posted Media
 
-The app must be able to fetch already-posted media from an Instagram account.
+The app must be able to bring in already-posted media from an Instagram account. Because the official API cannot fetch arbitrary accounts and scraping is not allowed, posted media is imported from a user-provided screenshot of the profile grid (the approved manual fallback — see `/docs/10-decisions.md` Decision 008).
 
-Fetched Instagram media must be shown as locked grid items.
+Imported Instagram media must be shown as locked grid items.
 
 Instagram items:
 
@@ -22,7 +22,7 @@ Instagram items:
 - Must not be manually reordered
 - Must not be removed through the normal remove action
 - Must preserve Instagram order
-- Must be refreshed when the user triggers refresh
+- Must be refreshed (re-imported) when the user triggers refresh
 
 ### Posts Grid
 
@@ -116,6 +116,6 @@ The user must be able to change the selected username.
 - No backend unless explicitly approved
 - No Instagram password storage
 - No Instagram scraping
-- Official Instagram API or approved manual fallback only
+- Official Instagram API or approved manual fallback only (the chosen approach is the manual screenshot import — `/docs/10-decisions.md` Decision 008)
 - No publishing to Instagram from the app
 - No App Store release

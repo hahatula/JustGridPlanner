@@ -66,3 +66,17 @@ Reasoning:
 - Posting affordances (e.g. "add from gallery") must live outside the grid (e.g. a toolbar button), never as interactive cells inside the grid, so the preview is not polluted by controls.
 
 This supersedes the earlier examples that showed planned items at the bottom of the refresh merge.
+
+## Decision 008: Posted Media Comes From Manual Screenshot Import
+
+Already-posted Instagram media is brought into the grid by a user-driven screenshot import, not by the official API or scraping.
+
+Reasoning (confirmed by Phase 11 research):
+
+- The official Instagram API (Instagram API with Instagram Login / Business Discovery) cannot fetch arbitrary public accounts' media. It returns only the authenticated user's own professional account, or — via Business Discovery — other accounts that are themselves Business/Creator; personal accounts cannot be fetched at all, and it requires a professional account plus Meta app setup. (The Instagram Basic Display API was shut down in 2024.)
+- Scraping the public profile is forbidden (Decision 003, `/docs/07-agent-workflow.md`) and against Instagram's terms.
+- The app plans any account with low-fidelity previews, so a user-captured screenshot is sufficient and fully compliant — an approved manual fallback per `/docs/07-agent-workflow.md`.
+
+Flow: the user opens the Instagram profile, screenshots the 3×3 grid, returns to the app, imports the screenshot via PhotosPicker, aligns a draggable 3×3 overlay to the grid, and the app splits it into 9 locked posted tiles backed by local image files. "Refresh" means re-importing a newer screenshot, which replaces the posted tiles.
+
+This stays behind the `InstagramSyncService` boundary (Decision 004), so the official API remains a possible future implementation without changing the UX. Decision 005 (username selection) still holds: the username identifies which account is being planned and which profile "Open Instagram" opens, but it does not fetch media.

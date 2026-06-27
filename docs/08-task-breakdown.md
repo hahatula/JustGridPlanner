@@ -99,7 +99,53 @@ The first complete product must include both local planning and posted Instagram
 - Confirm post/reel separation options
 - Document exact setup steps
 
-## Phase 12 — Real Instagram Sync Implementation
+## Phase 12 — Manual Posted-Grid Import (Screenshot)
+
+Phase 11 confirmed the official Instagram API cannot fetch arbitrary public
+accounts' media, and scraping is not allowed (`/docs/10-decisions.md`
+Decision 008). Posted media is therefore brought in by a user-driven screenshot
+import, behind the existing `InstagramSyncService` boundary.
+
+- Add an "Open Instagram" action that opens the profile (`instagram://user?username=…`,
+  falling back to `https://instagram.com/username`) so the user can screenshot their grid.
+- Show a short instruction step ("Take a screenshot of the 3×3 grid, then return and tap Import Screenshot").
+- Add "Import Screenshot" using PhotosPicker (no photo-library permission prompt).
+- Show a draggable 3×3 crop overlay the user aligns to the grid.
+- Split the cropped region evenly into 9 tile images and save them to local storage.
+- Posts: 3×3 of 3:4 tiles; Reels: 3×3 of 9:16 tiles.
+
+## Phase 13 — Posted Tiles As Locked Grid Items
+
+- Convert the 9 split tiles into locked posted grid items (`source = instagram`,
+  `isLocked = true`) backed by their local image files.
+- Implement the `InstagramSyncService` boundary with the manual-import provider
+  (replacing the development mock for real use).
+- Merge imported posted tiles below the local planned items (planned-on-top,
+  `/docs/10-decisions.md` Decision 007); "refresh" means re-importing a newer
+  screenshot, which replaces the posted tiles.
+- Persist imported posted tiles and their image files so they survive a restart
+  (they are user-imported local files, unlike API-fetched media).
+
+## Phase 14 — Final Polish
+
+- Empty states
+- Error states
+- Loading states
+- Refresh / import button states
+- Basic settings if needed
+- Final manual testing
+
+---
+
+## Phase 12 (OUTDATED) — Real Instagram Sync Implementation
+
+> ⚠️ **OUTDATED — superseded by the manual screenshot import (new Phases 12–13).**
+> Kept for reference. The official Instagram API path (OAuth on the user's own
+> professional account, or Business Discovery between professional accounts)
+> cannot fetch arbitrary public accounts and requires a professional account plus
+> Meta app setup — see Phase 11 and `/docs/10-decisions.md` Decision 008. It
+> remains a possible future option behind `InstagramSyncService`, but is not the
+> current plan.
 
 - Add authentication if needed
 - Fetch posted media from official API
@@ -107,12 +153,3 @@ The first complete product must include both local planning and posted Instagram
 - Update Posts grid
 - Update Reels grid
 - Keep manual planned items after refresh
-
-## Phase 13 — Final Polish
-
-- Empty states
-- Error states
-- Loading states
-- Refresh button states
-- Basic settings if needed
-- Final manual testing

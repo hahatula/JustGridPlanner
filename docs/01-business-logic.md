@@ -25,7 +25,7 @@ Rules:
 
 - Cannot be removed by normal delete action
 
-- Can be refreshed from Instagram sync
+- Can be refreshed by re-importing a screenshot (behind the Instagram sync boundary; see `/docs/10-decisions.md` Decision 008)
 
 - Should keep its original order from Instagram
 
@@ -49,7 +49,7 @@ Rules:
 
 When refreshing Instagram data:
 
-1. Fetch latest posted Instagram media.
+1. Obtain the latest posted Instagram media (re-import a newer screenshot).
 
 2. Replace the Instagram-posted part of the grid.
 
