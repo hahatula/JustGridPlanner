@@ -15,6 +15,9 @@ struct PostsGridView: View {
             )
                 .navigationTitle("Posts")
                 .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        AccountToolbarButton()
+                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         GalleryImportButton(viewModel: viewModel)
                     }

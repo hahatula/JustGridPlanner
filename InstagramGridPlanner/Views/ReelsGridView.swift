@@ -15,6 +15,9 @@ struct ReelsGridView: View {
             )
                 .navigationTitle("Reels")
                 .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        AccountToolbarButton()
+                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         GalleryImportButton(viewModel: viewModel)
                     }

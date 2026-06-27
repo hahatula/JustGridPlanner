@@ -45,6 +45,12 @@ final class LocalStorageService {
         metadataURL.appendingPathComponent("\(gridType.rawValue).json")
     }
 
+    /// App settings JSON lives directly under Documents (it is app-wide config,
+    /// not per-grid data).
+    private var settingsFileURL: URL {
+        documentsURL.appendingPathComponent("settings.json")
+    }
+
     /// Re-encodes the given image data to JPEG and writes it under
     /// `images/<uuid>.jpg`, returning the relative path stored on a `GridItem`.
     func saveImageData(_ data: Data) throws -> String {
@@ -91,6 +97,26 @@ final class LocalStorageService {
             return []
         }
         return items
+    }
+
+    // MARK: - Settings
+
+    /// Writes app settings to `Documents/settings.json` (atomically), reusing
+    /// the ISO-8601 encoder.
+    func saveSettings(_ settings: AppSettings) throws {
+        let data = try encoder.encode(settings)
+        try data.write(to: settingsFileURL, options: .atomic)
+    }
+
+    /// Reads app settings. Returns a default `AppSettings()` (never throws) when
+    /// the file is missing, unreadable, or contains invalid/corrupted JSON, so
+    /// first launch and corruption never break startup.
+    func loadSettings() -> AppSettings {
+        guard let data = try? Data(contentsOf: settingsFileURL),
+              let settings = try? decoder.decode(AppSettings.self, from: data) else {
+            return AppSettings()
+        }
+        return settings
     }
 
     enum StorageError: Error {
