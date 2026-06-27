@@ -8,28 +8,32 @@ import Observation
 final class GridPlannerViewModel {
     let gridType: GridType
     private let storage: LocalStorageService
+    private let sync: InstagramSyncService
 
     var items: [GridItem]
+    /// True while a refresh fetch is in flight (drives the loading indicator).
+    var isRefreshing = false
+    /// A user-facing message when a refresh fails or is blocked; cleared by the
+    /// view's alert.
+    var refreshError: String?
 
-    init(gridType: GridType, storage: LocalStorageService = .shared) {
+    init(
+        gridType: GridType,
+        storage: LocalStorageService = .shared,
+        sync: InstagramSyncService = MockInstagramSyncService()
+    ) {
         self.gridType = gridType
         self.storage = storage
+        self.sync = sync
 
-        // Persisted local planned items, restored on top (by stored order).
+        // Persisted local planned items only, restored on top (by stored order).
+        // Instagram items are sync-derived: they arrive via `refresh()`, not a
+        // placeholder, so the launch grid reflects the user's real planning.
         let saved = storage.loadItems(for: gridType)
             .filter { $0.source == .local }
             .sorted { $0.orderIndex < $1.orderIndex }
 
-        // Instagram items come from sync (Phase 9); until then, seed the sample
-        // placeholders in DEBUG only so the grid has visual context.
-        #if DEBUG
-        let placeholders = (gridType == .posts ? SampleData.posts : SampleData.reels)
-            .filter { $0.source == .instagram }
-        #else
-        let placeholders: [GridItem] = []
-        #endif
-
-        self.items = Self.renumbered(saved + placeholders)
+        self.items = Self.renumbered(saved)
     }
 
     /// Saves each image, creates a local `GridItem` for it, and inserts the new
@@ -84,6 +88,36 @@ final class GridPlannerViewModel {
         locals.move(fromOffsets: [from], toOffset: to > from ? to + 1 : to)
         items = Self.renumbered(locals + others)
         persist()
+    }
+
+    /// Fetches the selected account's posted media for this grid and merges it
+    /// under the local planned block: `local items (kept, in order, on top) +
+    /// fetched Instagram items (Instagram order)`, renumbering. Replacing the
+    /// `.local` filter's complement means a re-refresh replaces (not duplicates)
+    /// the old Instagram items, and `items` is only reassigned on success — a
+    /// failure leaves the grid (and every local item) untouched.
+    ///
+    /// Requires a selected account: a nil/empty username does no fetch and sets
+    /// `refreshError`. Returns whether the refresh succeeded.
+    @discardableResult
+    func refresh(username: String?) async -> Bool {
+        guard let username, !username.isEmpty else {
+            refreshError = "Set an account to refresh."
+            return false
+        }
+
+        isRefreshing = true
+        defer { isRefreshing = false }
+
+        do {
+            let fetched = try await sync.fetchPostedMedia(forUsername: username, gridType: gridType)
+            items = Self.renumbered(items.filter { $0.source == .local } + fetched)
+            refreshError = nil
+            return true
+        } catch {
+            refreshError = "Couldn't refresh from Instagram. Please try again."
+            return false
+        }
     }
 
     /// Saves the grid's local planned items to disk. Instagram items are not

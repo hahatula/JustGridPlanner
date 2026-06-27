@@ -5,6 +5,15 @@ import SwiftUI
 struct PostsGridView: View {
     @State private var viewModel = GridPlannerViewModel(gridType: .posts)
 
+    /// Drives the error alert: presented while `refreshError` is set, cleared
+    /// when the alert is dismissed.
+    private var refreshErrorBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.refreshError != nil },
+            set: { if !$0 { viewModel.refreshError = nil } }
+        )
+    }
+
     var body: some View {
         NavigationStack {
             GridPlannerView(
@@ -18,9 +27,17 @@ struct PostsGridView: View {
                     ToolbarItem(placement: .topBarLeading) {
                         AccountToolbarButton()
                     }
+                    ToolbarItem(placement: .topBarLeading) {
+                        RefreshButton(viewModel: viewModel)
+                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         GalleryImportButton(viewModel: viewModel)
                     }
+                }
+                .alert("Refresh", isPresented: refreshErrorBinding) {
+                    Button("OK", role: .cancel) { viewModel.refreshError = nil }
+                } message: {
+                    Text(viewModel.refreshError ?? "")
                 }
         }
     }

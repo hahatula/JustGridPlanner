@@ -34,6 +34,13 @@ final class AppSettingsStore {
         persist()
     }
 
+    /// Records the moment of a successful grid refresh (app-level, not per-grid)
+    /// and persists. Called by the refresh control after a fetch succeeds.
+    func markRefreshed() {
+        settings.lastSuccessfulRefreshAt = Date()
+        persist()
+    }
+
     private func persist() {
         do {
             try storage.saveSettings(settings)
