@@ -62,14 +62,3 @@ Each cell SHALL reflect the item's source. Items with `source == .instagram` (i.
 - **WHEN** a cell determines whether to show the lock indicator
 - **THEN** it uses the item's `isLocked` value and does not re-derive the rule from `source` in view code
 
-### Requirement: Display-only grid in this phase
-The grid in this phase SHALL be presentation-only. It MUST NOT provide any add, remove, delete, drag, or reorder affordance, and MUST NOT read from or write to local storage or any Instagram service.
-
-#### Scenario: No mutation affordances are present
-- **WHEN** a user views either grid
-- **THEN** there is no button or gesture to add, delete, or reorder items in this phase
-
-#### Scenario: No storage or network access
-- **WHEN** the grid renders
-- **THEN** no local-storage read/write and no Instagram-sync or network call is performed; the view only displays the items it was given
-

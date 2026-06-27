@@ -1,15 +1,29 @@
 import Foundation
 import UIKit
 
-/// Stores imported image files in the app's local storage. This phase only
-/// handles image files; grid metadata save/load arrives in Phase 5 and image
-/// deletion in Phase 6.
+/// Stores a grid's local planned items (as JSON metadata) and the imported
+/// image files they reference. Image deletion arrives in Phase 6.
 final class LocalStorageService {
     static let shared = LocalStorageService()
 
     private let fileManager: FileManager
     /// Relative directory (under Documents) where imported images live.
     private let imagesDirectoryName = "images"
+    /// Relative directory (under Documents) where grid metadata JSON lives.
+    private let metadataDirectoryName = "metadata"
+
+    private let encoder: JSONEncoder = {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return encoder
+    }()
+
+    private let decoder: JSONDecoder = {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }()
 
     init(fileManager: FileManager = .default) {
         self.fileManager = fileManager
@@ -21,6 +35,14 @@ final class LocalStorageService {
 
     private var imagesURL: URL {
         documentsURL.appendingPathComponent(imagesDirectoryName, isDirectory: true)
+    }
+
+    private var metadataURL: URL {
+        documentsURL.appendingPathComponent(metadataDirectoryName, isDirectory: true)
+    }
+
+    private func metadataFileURL(for gridType: GridType) -> URL {
+        metadataURL.appendingPathComponent("\(gridType.rawValue).json")
     }
 
     /// Re-encodes the given image data to JPEG and writes it under
@@ -42,6 +64,25 @@ final class LocalStorageService {
     func imageURL(for item: GridItem) -> URL? {
         guard item.source == .local, let path = item.localImagePath else { return nil }
         return documentsURL.appendingPathComponent(path)
+    }
+
+    // MARK: - Metadata
+
+    /// Writes a grid's items to `metadata/<grid>.json` (atomically).
+    func saveItems(_ items: [GridItem], for gridType: GridType) throws {
+        try fileManager.createDirectory(at: metadataURL, withIntermediateDirectories: true)
+        let data = try encoder.encode(items)
+        try data.write(to: metadataFileURL(for: gridType), options: .atomic)
+    }
+
+    /// Reads a grid's saved items. Returns an empty array (never throws) when
+    /// the file is missing, unreadable, or contains invalid/corrupted JSON.
+    func loadItems(for gridType: GridType) -> [GridItem] {
+        guard let data = try? Data(contentsOf: metadataFileURL(for: gridType)),
+              let items = try? decoder.decode([GridItem].self, from: data) else {
+            return []
+        }
+        return items
     }
 
     enum StorageError: Error {

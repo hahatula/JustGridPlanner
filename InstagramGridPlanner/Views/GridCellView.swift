@@ -2,55 +2,43 @@ import SwiftUI
 
 /// One tile in the grid. Shows the imported local image when available,
 /// otherwise a placeholder (Instagram thumbnails arrive in Phase 9/12), and
-/// marks locked Instagram items. The parent grid sizes the tile to the tab's
-/// portrait aspect ratio; this view fills whatever space it is given.
+/// marks locked Instagram items. The parent grid passes the exact tile size.
 struct GridCellView: View {
     let item: GridItem
+    let width: CGFloat
+    let height: CGFloat
 
     @State private var loadedImage: UIImage?
 
     var body: some View {
-        content
-            // Fill the tile the parent grid sized us to, then clip so a
-            // cover-scaled image can never overflow its box.
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .clipped()
-            .contentShape(Rectangle())
-            .overlay(alignment: .topTrailing) {
-                if item.isLocked {
-                    Image(systemName: "lock.fill")
-                        .font(.caption)
-                        .foregroundStyle(.white)
-                        .padding(4)
-                        .background(.black.opacity(0.5), in: Circle())
-                        .padding(4)
-                }
-            }
-            .task(id: item.id) {
-                await loadLocalImage()
-            }
-    }
-
-    @ViewBuilder
-    private var content: some View {
-        if let loadedImage {
-            // Cover the tile, centered, without distortion: the clear base
-            // takes the cell's size, the image fills it, the cell clips it.
-            Color.clear
-                .overlay {
-                    Image(uiImage: loadedImage)
-                        .resizable()
-                        .scaledToFill()
-                }
-        } else {
-            ZStack {
-                tint
-                // Placeholder when there is no local image to show. Posted vs.
-                // planned are distinguished by tint and the lock badge.
+        ZStack {
+            tint
+            if let loadedImage {
+                // UIImageView's `.scaleAspectFill` reliably covers + clips,
+                // avoiding SwiftUI's flaky `scaledToFill` sizing in grids.
+                AspectFillImage(image: loadedImage)
+                    .frame(width: width, height: height)
+            } else {
+                // Posted vs. planned are distinguished by tint and the lock badge.
                 Image(systemName: "photo")
                     .font(.title2)
                     .foregroundStyle(.secondary)
             }
+        }
+        .frame(width: width, height: height)
+        .clipped()
+        .overlay(alignment: .topTrailing) {
+            if item.isLocked {
+                Image(systemName: "lock.fill")
+                    .font(.caption)
+                    .foregroundStyle(.white)
+                    .padding(4)
+                    .background(.black.opacity(0.5), in: Circle())
+                    .padding(4)
+            }
+        }
+        .task(id: item.id) {
+            await loadLocalImage()
         }
     }
 
@@ -72,12 +60,33 @@ struct GridCellView: View {
     }
 }
 
+/// Aspect-fill image backed by `UIImageView`, which crops-to-fill predictably
+/// at any frame (SwiftUI's `Image.scaledToFill()` mis-sizes inside `LazyVGrid`).
+private struct AspectFillImage: UIViewRepresentable {
+    let image: UIImage
+
+    func makeUIView(context: Context) -> UIImageView {
+        let view = UIImageView(image: image)
+        view.contentMode = .scaleAspectFill
+        view.clipsToBounds = true
+        view.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        view.setContentHuggingPriority(.defaultLow, for: .vertical)
+        view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        view.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+        return view
+    }
+
+    func updateUIView(_ uiView: UIImageView, context: Context) {
+        uiView.image = image
+    }
+}
+
 #Preview("Locked (Instagram)") {
-    GridCellView(item: GridItem(id: "ig", source: .instagram, gridType: .posts, orderIndex: 0))
-        .frame(width: 120, height: 160)
+    GridCellView(item: GridItem(id: "ig", source: .instagram, gridType: .posts, orderIndex: 0),
+                 width: 120, height: 160)
 }
 
 #Preview("Unlocked (Local)") {
-    GridCellView(item: GridItem(id: "lo", source: .local, gridType: .posts, orderIndex: 1))
-        .frame(width: 120, height: 160)
+    GridCellView(item: GridItem(id: "lo", source: .local, gridType: .posts, orderIndex: 1),
+                 width: 120, height: 160)
 }

@@ -14,11 +14,22 @@ final class GridPlannerViewModel {
     init(gridType: GridType, storage: LocalStorageService = .shared) {
         self.gridType = gridType
         self.storage = storage
+
+        // Persisted local planned items, restored on top (by stored order).
+        let saved = storage.loadItems(for: gridType)
+            .filter { $0.source == .local }
+            .sorted { $0.orderIndex < $1.orderIndex }
+
+        // Instagram items come from sync (Phase 9); until then, seed the sample
+        // placeholders in DEBUG only so the grid has visual context.
         #if DEBUG
-        self.items = gridType == .posts ? SampleData.posts : SampleData.reels
+        let placeholders = (gridType == .posts ? SampleData.posts : SampleData.reels)
+            .filter { $0.source == .instagram }
         #else
-        self.items = []
+        let placeholders: [GridItem] = []
         #endif
+
+        self.items = Self.renumbered(saved + placeholders)
     }
 
     /// Saves each image, creates a local `GridItem` for it, and inserts the new
@@ -37,12 +48,25 @@ final class GridPlannerViewModel {
             )
         }
         guard !newItems.isEmpty else { return }
-        items = renumbered(newItems + items)
+        items = Self.renumbered(newItems + items)
+        persist()
+    }
+
+    /// Saves the grid's local planned items to disk. Instagram items are not
+    /// persisted — they are sync-derived (Phase 9).
+    private func persist() {
+        do {
+            try storage.saveItems(items.filter { $0.source == .local }, for: gridType)
+        } catch {
+            #if DEBUG
+            print("[GridPlannerViewModel] persist failed: \(error)")
+            #endif
+        }
     }
 
     /// Reassigns `orderIndex` to each item's position so array order is the
     /// grid order (index 0 = top-left).
-    private func renumbered(_ items: [GridItem]) -> [GridItem] {
+    private static func renumbered(_ items: [GridItem]) -> [GridItem] {
         items.enumerated().map { index, item in
             var copy = item
             copy.orderIndex = index

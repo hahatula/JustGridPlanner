@@ -8,12 +8,8 @@ struct GridPlannerView: View {
     let gridType: GridType
     let items: [GridItem]
 
-    /// `SwiftUI.GridItem` is qualified because this module also declares a
-    /// model named `GridItem`, which would otherwise shadow it here.
-    private let columns = Array(
-        repeating: SwiftUI.GridItem(.flexible(), spacing: 1),
-        count: 3
-    )
+    private let columnCount = 3
+    private let spacing: CGFloat = 1
 
     /// Aspect ratio Instagram uses for this surface (width / height). Derived
     /// from `gridType` in the view layer — not stored on the model.
@@ -31,12 +27,23 @@ struct GridPlannerView: View {
     }
 
     var body: some View {
-        ScrollView {
-            LazyVGrid(columns: columns, spacing: 1) {
-                ForEach(orderedItems) { item in
-                    GridCellView(item: item)
-                        .aspectRatio(tileAspectRatio, contentMode: .fill)
-                        .clipped()
+        GeometryReader { geo in
+            // Compute an exact tile size from the available width so every
+            // cell is the same size regardless of its content (image vs
+            // placeholder). `SwiftUI.GridItem` is qualified because this module
+            // also declares a model named `GridItem`.
+            let tileWidth = (geo.size.width - spacing * CGFloat(columnCount - 1)) / CGFloat(columnCount)
+            let tileHeight = tileWidth / tileAspectRatio
+            let columns = Array(
+                repeating: SwiftUI.GridItem(.fixed(tileWidth), spacing: spacing),
+                count: columnCount
+            )
+
+            ScrollView {
+                LazyVGrid(columns: columns, spacing: spacing) {
+                    ForEach(orderedItems) { item in
+                        GridCellView(item: item, width: tileWidth, height: tileHeight)
+                    }
                 }
             }
         }
