@@ -2,7 +2,7 @@ import Foundation
 import UIKit
 
 /// Stores a grid's local planned items (as JSON metadata) and the imported
-/// image files they reference. Image deletion arrives in Phase 6.
+/// image files they reference, and deletes an item's image file on removal.
 final class LocalStorageService {
     static let shared = LocalStorageService()
 
@@ -64,6 +64,14 @@ final class LocalStorageService {
     func imageURL(for item: GridItem) -> URL? {
         guard item.source == .local, let path = item.localImagePath else { return nil }
         return documentsURL.appendingPathComponent(path)
+    }
+
+    /// Deletes the image file backing a local item. A non-local item or a
+    /// missing/already-deleted file is a safe no-op (no throw): each import
+    /// writes a unique `images/<uuid>.jpg`, so no other item shares the file.
+    func deleteImage(for item: GridItem) {
+        guard let url = imageURL(for: item) else { return }
+        try? fileManager.removeItem(at: url)
     }
 
     // MARK: - Metadata

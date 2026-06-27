@@ -7,6 +7,10 @@ struct GridCellView: View {
     let item: GridItem
     let width: CGFloat
     let height: CGFloat
+    /// When non-nil, the tile shows a tappable × badge that calls this to
+    /// remove the item. The parent supplies it only for local (deletable)
+    /// items, so the cell never decides the business rule itself.
+    var onDelete: (() -> Void)?
 
     @State private var loadedImage: UIImage?
 
@@ -28,6 +32,7 @@ struct GridCellView: View {
         .frame(width: width, height: height)
         .clipped()
         .overlay(alignment: .topTrailing) {
+            // Mutually exclusive: Instagram items lock, local items get a ×.
             if item.isLocked {
                 Image(systemName: "lock.fill")
                     .font(.caption)
@@ -35,6 +40,16 @@ struct GridCellView: View {
                     .padding(4)
                     .background(.black.opacity(0.5), in: Circle())
                     .padding(4)
+            } else if let onDelete {
+                Button(action: onDelete) {
+                    Image(systemName: "xmark")
+                        .font(.caption)
+                        .foregroundStyle(.white)
+                        .padding(4)
+                        .background(.black.opacity(0.5), in: Circle())
+                        .padding(4)
+                }
+                .accessibilityLabel("Delete")
             }
         }
         .task(id: item.id) {
@@ -83,10 +98,12 @@ private struct AspectFillImage: UIViewRepresentable {
 
 #Preview("Locked (Instagram)") {
     GridCellView(item: GridItem(id: "ig", source: .instagram, gridType: .posts, orderIndex: 0),
-                 width: 120, height: 160)
+                 width: 120, height: 160,
+                 onDelete: nil)
 }
 
 #Preview("Unlocked (Local)") {
     GridCellView(item: GridItem(id: "lo", source: .local, gridType: .posts, orderIndex: 1),
-                 width: 120, height: 160)
+                 width: 120, height: 160,
+                 onDelete: {})
 }

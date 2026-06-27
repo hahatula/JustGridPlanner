@@ -7,7 +7,11 @@ struct ReelsGridView: View {
 
     var body: some View {
         NavigationStack {
-            GridPlannerView(gridType: .reels, items: viewModel.items)
+            GridPlannerView(
+                gridType: .reels,
+                items: viewModel.items,
+                onDelete: { viewModel.removeLocalItem($0) }
+            )
                 .navigationTitle("Reels")
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {

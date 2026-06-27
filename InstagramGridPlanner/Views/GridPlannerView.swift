@@ -7,6 +7,9 @@ import SwiftUI
 struct GridPlannerView: View {
     let gridType: GridType
     let items: [GridItem]
+    /// Called with the item to remove when a local tile's × is tapped. The view
+    /// stays presentation-only; the owner (a tab) supplies the removal logic.
+    let onDelete: (GridItem) -> Void
 
     private let columnCount = 3
     private let spacing: CGFloat = 1
@@ -42,7 +45,14 @@ struct GridPlannerView: View {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: spacing) {
                     ForEach(orderedItems) { item in
-                        GridCellView(item: item, width: tileWidth, height: tileHeight)
+                        GridCellView(
+                            item: item,
+                            width: tileWidth,
+                            height: tileHeight,
+                            // Local items get a delete handler; Instagram items
+                            // (locked) get none, so no × badge is shown.
+                            onDelete: item.isLocked ? nil : { onDelete(item) }
+                        )
                     }
                 }
             }
@@ -51,9 +61,9 @@ struct GridPlannerView: View {
 }
 
 #Preview("Posts (3:4)") {
-    GridPlannerView(gridType: .posts, items: SampleData.posts)
+    GridPlannerView(gridType: .posts, items: SampleData.posts, onDelete: { _ in })
 }
 
 #Preview("Reels (9:16)") {
-    GridPlannerView(gridType: .reels, items: SampleData.reels)
+    GridPlannerView(gridType: .reels, items: SampleData.reels, onDelete: { _ in })
 }

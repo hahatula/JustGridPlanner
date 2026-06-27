@@ -52,6 +52,17 @@ final class GridPlannerViewModel {
         persist()
     }
 
+    /// Removes a local planned item: deletes its image file, drops it from the
+    /// grid, renumbers the rest, and persists. Instagram items are locked and
+    /// ignored — the `isLocked` guard is defense-in-depth so a misbehaving
+    /// caller can never remove one.
+    func removeLocalItem(_ item: GridItem) {
+        guard !item.isLocked else { return }
+        storage.deleteImage(for: item)
+        items = Self.renumbered(items.filter { $0.id != item.id })
+        persist()
+    }
+
     /// Saves the grid's local planned items to disk. Instagram items are not
     /// persisted — they are sync-derived (Phase 9).
     private func persist() {

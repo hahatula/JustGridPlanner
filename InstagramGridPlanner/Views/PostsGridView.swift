@@ -7,7 +7,11 @@ struct PostsGridView: View {
 
     var body: some View {
         NavigationStack {
-            GridPlannerView(gridType: .posts, items: viewModel.items)
+            GridPlannerView(
+                gridType: .posts,
+                items: viewModel.items,
+                onDelete: { viewModel.removeLocalItem($0) }
+            )
                 .navigationTitle("Posts")
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
