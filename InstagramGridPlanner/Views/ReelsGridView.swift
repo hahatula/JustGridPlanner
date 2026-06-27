@@ -10,7 +10,8 @@ struct ReelsGridView: View {
             GridPlannerView(
                 gridType: .reels,
                 items: viewModel.items,
-                onDelete: { viewModel.removeLocalItem($0) }
+                onDelete: { viewModel.removeLocalItem($0) },
+                onMove: { viewModel.moveLocalItem(withID: $0, beforeID: $1) }
             )
                 .navigationTitle("Reels")
                 .toolbar {

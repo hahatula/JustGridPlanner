@@ -11,6 +11,11 @@ struct GridCellView: View {
     /// remove the item. The parent supplies it only for local (deletable)
     /// items, so the cell never decides the business rule itself.
     var onDelete: (() -> Void)?
+    /// When non-nil, the tile is a drag source and a drop target for reordering.
+    /// Called with the dropped item's id when another tile is released onto this
+    /// one. Supplied only for local items, so Instagram tiles are inert — they
+    /// can neither start a drag nor accept a drop.
+    var onMove: ((_ draggedID: String) -> Void)?
 
     @State private var loadedImage: UIImage?
 
@@ -52,6 +57,7 @@ struct GridCellView: View {
                 .accessibilityLabel("Delete")
             }
         }
+        .modifier(ReorderModifier(id: item.id, onMove: onMove))
         .task(id: item.id) {
             await loadLocalImage()
         }
@@ -72,6 +78,28 @@ struct GridCellView: View {
     /// posted vs. planned media look different.
     private var tint: Color {
         item.isLocked ? Color.gray.opacity(0.25) : Color.accentColor.opacity(0.15)
+    }
+}
+
+/// Makes a tile a drag source and drop target only when `onMove` is supplied
+/// (local items). Instagram tiles (no `onMove`) stay inert, which structurally
+/// enforces "only local items reorder" and "a local item can never land in the
+/// Instagram region." Drop-to-insert: reordering happens once, on release.
+private struct ReorderModifier: ViewModifier {
+    let id: String
+    let onMove: ((_ draggedID: String) -> Void)?
+
+    func body(content: Content) -> some View {
+        if let onMove {
+            content
+                .draggable(id)
+                .dropDestination(for: String.self) { ids, _ in
+                    if let first = ids.first { onMove(first) }
+                    return true
+                }
+        } else {
+            content
+        }
     }
 }
 
@@ -105,5 +133,6 @@ private struct AspectFillImage: UIViewRepresentable {
 #Preview("Unlocked (Local)") {
     GridCellView(item: GridItem(id: "lo", source: .local, gridType: .posts, orderIndex: 1),
                  width: 120, height: 160,
-                 onDelete: {})
+                 onDelete: {},
+                 onMove: { _ in })
 }

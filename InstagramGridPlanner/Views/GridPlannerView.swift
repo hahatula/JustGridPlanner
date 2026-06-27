@@ -10,6 +10,10 @@ struct GridPlannerView: View {
     /// Called with the item to remove when a local tile's × is tapped. The view
     /// stays presentation-only; the owner (a tab) supplies the removal logic.
     let onDelete: (GridItem) -> Void
+    /// Called when a local tile (`draggedID`) is dropped onto another local tile
+    /// (`targetID`) to reorder it. The owner supplies the reorder logic; only
+    /// local cells receive a handler, so Instagram tiles never move.
+    let onMove: (_ draggedID: String, _ targetID: String) -> Void
 
     private let columnCount = 3
     private let spacing: CGFloat = 1
@@ -51,7 +55,10 @@ struct GridPlannerView: View {
                             height: tileHeight,
                             // Local items get a delete handler; Instagram items
                             // (locked) get none, so no × badge is shown.
-                            onDelete: item.isLocked ? nil : { onDelete(item) }
+                            onDelete: item.isLocked ? nil : { onDelete(item) },
+                            // Same rule for reordering: only local cells are
+                            // drag sources/drop targets, bound to their own id.
+                            onMove: item.isLocked ? nil : { onMove($0, item.id) }
                         )
                     }
                 }
@@ -61,9 +68,9 @@ struct GridPlannerView: View {
 }
 
 #Preview("Posts (3:4)") {
-    GridPlannerView(gridType: .posts, items: SampleData.posts, onDelete: { _ in })
+    GridPlannerView(gridType: .posts, items: SampleData.posts, onDelete: { _ in }, onMove: { _, _ in })
 }
 
 #Preview("Reels (9:16)") {
-    GridPlannerView(gridType: .reels, items: SampleData.reels, onDelete: { _ in })
+    GridPlannerView(gridType: .reels, items: SampleData.reels, onDelete: { _ in }, onMove: { _, _ in })
 }

@@ -10,7 +10,8 @@ struct PostsGridView: View {
             GridPlannerView(
                 gridType: .posts,
                 items: viewModel.items,
-                onDelete: { viewModel.removeLocalItem($0) }
+                onDelete: { viewModel.removeLocalItem($0) },
+                onMove: { viewModel.moveLocalItem(withID: $0, beforeID: $1) }
             )
                 .navigationTitle("Posts")
                 .toolbar {

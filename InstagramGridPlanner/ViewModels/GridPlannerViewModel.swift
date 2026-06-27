@@ -63,6 +63,29 @@ final class GridPlannerViewModel {
         persist()
     }
 
+    /// Reorders a local planned item within the local block: moves the item
+    /// with `draggedID` to the position of the item with `targetID`, renumbers
+    /// `orderIndex`, and persists. Both ids must resolve to local (`!isLocked`)
+    /// items — the guard is defense-in-depth so Instagram items can never be
+    /// dragged or used as a drop target. Instagram items keep their relative
+    /// order below the locals, so planned items always stay on top.
+    func moveLocalItem(withID draggedID: String, beforeID targetID: String) {
+        guard draggedID != targetID else { return }
+        guard let dragged = items.first(where: { $0.id == draggedID }), !dragged.isLocked,
+              let target = items.first(where: { $0.id == targetID }), !target.isLocked
+        else { return }
+
+        var locals = items.filter { $0.source == .local }
+        let others = items.filter { $0.source != .local }
+        guard let from = locals.firstIndex(where: { $0.id == draggedID }),
+              let to = locals.firstIndex(where: { $0.id == targetID })
+        else { return }
+
+        locals.move(fromOffsets: [from], toOffset: to > from ? to + 1 : to)
+        items = Self.renumbered(locals + others)
+        persist()
+    }
+
     /// Saves the grid's local planned items to disk. Instagram items are not
     /// persisted — they are sync-derived (Phase 9).
     private func persist() {
