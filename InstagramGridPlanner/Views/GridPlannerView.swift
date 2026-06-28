@@ -46,20 +46,30 @@ struct GridPlannerView: View {
                 count: columnCount
             )
 
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: spacing) {
-                    ForEach(orderedItems) { item in
-                        GridCellView(
-                            item: item,
-                            width: tileWidth,
-                            height: tileHeight,
-                            // Local items get a delete handler; Instagram items
-                            // (locked) get none, so no × badge is shown.
-                            onDelete: item.isLocked ? nil : { onDelete(item) },
-                            // Same rule for reordering: only local cells are
-                            // drag sources/drop targets, bound to their own id.
-                            onMove: item.isLocked ? nil : { onMove($0, item.id) }
-                        )
+            if orderedItems.isEmpty {
+                // Whole grid empty (no local and no posted): hint how to start.
+                ContentUnavailableView(
+                    "Plan your grid",
+                    systemImage: "photo.on.rectangle",
+                    description: Text("Add photos from your gallery to plan your grid.")
+                )
+                .frame(width: geo.size.width, height: geo.size.height)
+            } else {
+                ScrollView {
+                    LazyVGrid(columns: columns, spacing: spacing) {
+                        ForEach(orderedItems) { item in
+                            GridCellView(
+                                item: item,
+                                width: tileWidth,
+                                height: tileHeight,
+                                // Local items get a delete handler; Instagram items
+                                // (locked) get none, so no × badge is shown.
+                                onDelete: item.isLocked ? nil : { onDelete(item) },
+                                // Same rule for reordering: only local cells are
+                                // drag sources/drop targets, bound to their own id.
+                                onMove: item.isLocked ? nil : { onMove($0, item.id) }
+                            )
+                        }
                     }
                 }
             }

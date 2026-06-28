@@ -24,6 +24,16 @@ struct AccountSettingsView: View {
                         Text("Enter the Instagram account you're planning for. You can paste a profile URL.")
                     }
                 }
+
+                Section {
+                    LabeledContent("Last imported") {
+                        if let date = store.settings.lastSuccessfulRefreshAt {
+                            Text(date, format: .relative(presentation: .named))
+                        } else {
+                            Text("Not imported yet").foregroundStyle(.secondary)
+                        }
+                    }
+                }
             }
             .navigationTitle("Account")
             .navigationBarTitleDisplayMode(.inline)

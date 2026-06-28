@@ -26,6 +26,14 @@ struct ScreenshotImportView: View {
     @State private var cropSize: CGSize = .zero
 
     @State private var noAccountAlert = false
+    /// True while a picked screenshot is being cropped/split/saved off-main.
+    @State private var isProcessing = false
+    /// A clear, recoverable error (bad image, degenerate crop); shown via alert.
+    @State private var errorMessage: String?
+
+    private var hasAccount: Bool {
+        !(store.selectedUsername ?? "").isEmpty
+    }
 
     /// Tile aspect ratio (width / height) for the imported grid.
     private var aspectRatio: CGFloat {
@@ -50,7 +58,17 @@ struct ScreenshotImportView: View {
                 } message: {
                     Text("Choose the Instagram account you're planning for, then open its profile to screenshot.")
                 }
+                .alert("Import failed", isPresented: errorBinding) {
+                    Button("OK", role: .cancel) { errorMessage = nil }
+                } message: {
+                    Text(errorMessage ?? "")
+                }
         }
+    }
+
+    /// Presents the error alert while `errorMessage` is set.
+    private var errorBinding: Binding<Bool> {
+        Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
     }
 
     @ViewBuilder
@@ -77,6 +95,13 @@ struct ScreenshotImportView: View {
                 Label("Open Instagram", systemImage: "arrow.up.right.square")
             }
             .buttonStyle(.bordered)
+            .disabled(!hasAccount)
+
+            if !hasAccount {
+                Text("Set an account to open its profile.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             PhotosPicker(selection: $photoItem, matching: .images) {
                 Label("Import Screenshot", systemImage: "photo")
@@ -102,7 +127,10 @@ struct ScreenshotImportView: View {
 
     private func loadScreenshot(_ item: PhotosPickerItem) async {
         guard let data = try? await item.loadTransferable(type: Data.self),
-              let image = UIImage(data: data) else { return }
+              let image = UIImage(data: data) else {
+            errorMessage = "Couldn't load that image. Please pick a screenshot from your photo library."
+            return
+        }
         screenshot = image
         step = .crop
     }
@@ -131,6 +159,15 @@ struct ScreenshotImportView: View {
             }
             .frame(width: geo.size.width, height: geo.size.height)
             .onAppear { initializeOverlay(in: frame) }
+            // Spinner while the off-main split runs.
+            .overlay {
+                if isProcessing {
+                    ProgressView()
+                        .controlSize(.large)
+                        .padding(24)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+                }
+            }
             // Float the Split control over the image (not a safe-area inset, which
             // would shrink the image area and desync the crop mapping).
             .overlay(alignment: .bottom) {
@@ -140,6 +177,7 @@ struct ScreenshotImportView: View {
                     Text("Split").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(isProcessing)
                 .padding()
                 .background(.ultraThinMaterial)
             }
@@ -163,17 +201,34 @@ struct ScreenshotImportView: View {
     }
 
     private func splitAndAdvance(imageSize: CGSize, displayFrame: CGRect) {
-        guard let screenshot else { return }
+        guard let screenshot, !isProcessing else { return }
         let overlayRect = CGRect(
             x: cropCenter.x - cropSize.width / 2,
             y: cropCenter.y - cropSize.height / 2,
             width: cropSize.width,
             height: cropSize.height
         )
-        let pixelRect = GridSplitter.pixelRect(imageSize: imageSize, displayFrame: displayFrame, overlayRect: overlayRect)
-        let tiles = GridSplitter.split(screenshot, pixelRect: pixelRect)
-        tilePaths = GridSplitter.saveTiles(tiles)
-        if !tilePaths.isEmpty { step = .review }
+
+        isProcessing = true
+        Task {
+            // Splitting a full-res screenshot into nine JPEGs is CPU work — run it
+            // off the main actor so the UI stays responsive, then update on main.
+            let paths = await Task.detached {
+                let pixelRect = GridSplitter.pixelRect(imageSize: imageSize, displayFrame: displayFrame, overlayRect: overlayRect)
+                let tiles = GridSplitter.split(screenshot, pixelRect: pixelRect)
+                guard tiles.count == 9 else { return [String]() }
+                return GridSplitter.saveTiles(tiles)
+            }.value
+
+            isProcessing = false
+            if paths.count == 9 {
+                tilePaths = paths
+                step = .review
+            } else {
+                // A degenerate crop yields no/partial tiles — fail loudly, no partial set.
+                errorMessage = "Couldn't split this screenshot into nine tiles. Align the 3×3 box over the grid, or pick another screenshot."
+            }
+        }
     }
 
     // MARK: - Review
