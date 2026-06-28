@@ -25,12 +25,18 @@ final class LocalStorageService {
         return decoder
     }()
 
-    init(fileManager: FileManager = .default) {
+    /// Optional base directory override (defaults to Documents). Lets tests and
+    /// the DEBUG sanity checks run against an isolated directory instead of the
+    /// app's real Documents, so they never touch the user's grids.
+    private let rootOverride: URL?
+
+    init(fileManager: FileManager = .default, root: URL? = nil) {
         self.fileManager = fileManager
+        self.rootOverride = root
     }
 
     private var documentsURL: URL {
-        fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        rootOverride ?? fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
     }
 
     private var imagesURL: URL {
@@ -65,14 +71,16 @@ final class LocalStorageService {
         return relativePath
     }
 
-    /// Resolves a local item's `localImagePath` to an absolute file URL.
-    /// Returns `nil` for non-local items or items without a path.
+    /// Resolves an item's `localImagePath` to an absolute file URL. Works for
+    /// any file-backed item — local planned tiles and imported posted tiles
+    /// both carry a `localImagePath`. Returns `nil` for items without one.
     func imageURL(for item: GridItem) -> URL? {
-        guard item.source == .local, let path = item.localImagePath else { return nil }
+        guard let path = item.localImagePath else { return nil }
         return documentsURL.appendingPathComponent(path)
     }
 
-    /// Deletes the image file backing a local item. A non-local item or a
+    /// Deletes the image file backing a file-backed item (a local planned tile
+    /// or an imported posted tile). An item without a `localImagePath` or a
     /// missing/already-deleted file is a safe no-op (no throw): each import
     /// writes a unique `images/<uuid>.jpg`, so no other item shares the file.
     func deleteImage(for item: GridItem) {

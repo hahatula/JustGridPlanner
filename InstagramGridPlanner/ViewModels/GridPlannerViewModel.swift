@@ -11,29 +11,25 @@ final class GridPlannerViewModel {
     private let sync: InstagramSyncService
 
     var items: [GridItem]
-    /// True while a refresh fetch is in flight (drives the loading indicator).
-    var isRefreshing = false
-    /// A user-facing message when a refresh fails or is blocked; cleared by the
-    /// view's alert.
-    var refreshError: String?
 
     init(
         gridType: GridType,
         storage: LocalStorageService = .shared,
-        sync: InstagramSyncService = MockInstagramSyncService()
+        sync: InstagramSyncService = ManualInstagramImportService()
     ) {
         self.gridType = gridType
         self.storage = storage
         self.sync = sync
 
-        // Persisted local planned items only, restored on top (by stored order).
-        // Instagram items are sync-derived: they arrive via `refresh()`, not a
-        // placeholder, so the launch grid reflects the user's real planning.
+        // Local planned items load synchronously and sit on top. Imported posted
+        // tiles are restored just after via the sync boundary (async), so the
+        // grid shows planning immediately and posted media a moment later.
         let saved = storage.loadItems(for: gridType)
             .filter { $0.source == .local }
             .sorted { $0.orderIndex < $1.orderIndex }
-
         self.items = Self.renumbered(saved)
+
+        Task { await loadPostedTiles() }
     }
 
     /// Saves each image, creates a local `GridItem` for it, and inserts the new
@@ -90,41 +86,45 @@ final class GridPlannerViewModel {
         persist()
     }
 
-    /// Fetches the selected account's posted media for this grid and merges it
-    /// under the local planned block: `local items (kept, in order, on top) +
-    /// fetched Instagram items (Instagram order)`, renumbering. Replacing the
-    /// `.local` filter's complement means a re-refresh replaces (not duplicates)
-    /// the old Instagram items, and `items` is only reassigned on success — a
-    /// failure leaves the grid (and every local item) untouched.
-    ///
-    /// Requires a selected account: a nil/empty username does no fetch and sets
-    /// `refreshError`. Returns whether the refresh succeeded.
-    @discardableResult
-    func refresh(username: String?) async -> Bool {
-        guard let username, !username.isEmpty else {
-            refreshError = "Set an account to refresh."
-            return false
+    /// Turns imported screenshot tiles into locked posted items and merges them
+    /// below the local planned block. Replaces any previous posted items —
+    /// deleting their image files first so old screenshots don't accumulate —
+    /// then persists. Local planned items are kept, on top, in order
+    /// (`/docs/10-decisions.md` Decision 007).
+    func importPostedTiles(_ paths: [String]) {
+        // Replace: delete the files backing the current posted tiles.
+        for item in items where item.source == .instagram {
+            storage.deleteImage(for: item)
         }
 
-        isRefreshing = true
-        defer { isRefreshing = false }
-
-        do {
-            let fetched = try await sync.fetchPostedMedia(forUsername: username, gridType: gridType)
-            items = Self.renumbered(items.filter { $0.source == .local } + fetched)
-            refreshError = nil
-            return true
-        } catch {
-            refreshError = "Couldn't refresh from Instagram. Please try again."
-            return false
+        let posted = paths.map { path in
+            GridItem(
+                id: UUID().uuidString,
+                source: .instagram,
+                gridType: gridType,
+                orderIndex: 0,
+                localImagePath: path
+            )
         }
+
+        items = Self.renumbered(items.filter { $0.source == .local } + posted)
+        persist()
     }
 
-    /// Saves the grid's local planned items to disk. Instagram items are not
-    /// persisted — they are sync-derived (Phase 9).
+    /// Restores previously imported posted tiles via the sync boundary and
+    /// merges them below the local planned items. Async so launch isn't blocked.
+    private func loadPostedTiles() async {
+        guard let posted = try? await sync.fetchPostedMedia(forUsername: "", gridType: gridType),
+              !posted.isEmpty else { return }
+        items = Self.renumbered(items.filter { $0.source == .local } + posted)
+    }
+
+    /// Saves the grid's file-backed items — local planned tiles and imported
+    /// posted tiles (both carry a `localImagePath`). Items with no local file
+    /// are not persisted.
     private func persist() {
         do {
-            try storage.saveItems(items.filter { $0.source == .local }, for: gridType)
+            try storage.saveItems(items.filter { $0.localImagePath != nil }, for: gridType)
         } catch {
             #if DEBUG
             print("[GridPlannerViewModel] persist failed: \(error)")

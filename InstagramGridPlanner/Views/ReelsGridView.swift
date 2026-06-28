@@ -1,18 +1,11 @@
 import SwiftUI
 
 /// Reels tab: the 3-column grid for `GridType.reels`, owned by a view model.
-/// Importing from the gallery (toolbar "+") adds local planned items on top.
+/// The gallery "+" adds local planned items on top; the import button brings in
+/// posted tiles (locked) below them ("refresh" = re-import).
 struct ReelsGridView: View {
+    @Environment(AppSettingsStore.self) private var settingsStore
     @State private var viewModel = GridPlannerViewModel(gridType: .reels)
-
-    /// Drives the error alert: presented while `refreshError` is set, cleared
-    /// when the alert is dismissed.
-    private var refreshErrorBinding: Binding<Bool> {
-        Binding(
-            get: { viewModel.refreshError != nil },
-            set: { if !$0 { viewModel.refreshError = nil } }
-        )
-    }
 
     var body: some View {
         NavigationStack {
@@ -27,11 +20,11 @@ struct ReelsGridView: View {
                     ToolbarItem(placement: .topBarLeading) {
                         AccountToolbarButton()
                     }
-                    ToolbarItem(placement: .topBarLeading) {
-                        RefreshButton(viewModel: viewModel)
-                    }
                     ToolbarItem(placement: .topBarTrailing) {
-                        PostedImportButton(gridType: .reels)
+                        PostedImportButton(gridType: .reels) { paths in
+                            viewModel.importPostedTiles(paths)
+                            settingsStore.markRefreshed()
+                        }
                     }
                     // Break the shared toolbar background so import and "+" read
                     // as two separate buttons, not one.
@@ -42,15 +35,11 @@ struct ReelsGridView: View {
                         GalleryImportButton(viewModel: viewModel)
                     }
                 }
-                .alert("Refresh", isPresented: refreshErrorBinding) {
-                    Button("OK", role: .cancel) { viewModel.refreshError = nil }
-                } message: {
-                    Text(viewModel.refreshError ?? "")
-                }
         }
     }
 }
 
 #Preview {
     ReelsGridView()
+        .environment(AppSettingsStore())
 }
