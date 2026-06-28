@@ -31,6 +31,14 @@ struct PostsGridView: View {
                         RefreshButton(viewModel: viewModel)
                     }
                     ToolbarItem(placement: .topBarTrailing) {
+                        PostedImportButton(gridType: .posts)
+                    }
+                    // Break the shared toolbar background so import and "+" read
+                    // as two separate buttons, not one.
+                    if #available(iOS 26.0, *) {
+                        ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
                         GalleryImportButton(viewModel: viewModel)
                     }
                 }
