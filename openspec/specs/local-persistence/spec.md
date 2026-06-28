@@ -25,16 +25,16 @@ On launch each grid SHALL load its previously saved local planned items so that 
 - **WHEN** the app launches and no metadata file exists yet
 - **THEN** the grid loads with no persisted local items and does not crash
 
-### Requirement: Only local items are persisted
-The app SHALL persist only items with `source == .local`. Items with `source == .instagram` MUST NOT be written to the metadata file, because Instagram items are derived from sync rather than stored as local user data (`/docs/01-business-logic.md`).
+### Requirement: Items backed by a local file are persisted
+The app SHALL persist a grid's items that are backed by a local image file (i.e. have a `localImagePath`) — both local planned items and imported posted tiles. Items with no local file SHALL NOT be persisted. Restored items SHALL keep their source, order, and image references, with local planned items above imported posted items.
 
-#### Scenario: Instagram items are not written
-- **WHEN** a grid containing both local and Instagram items is saved
-- **THEN** the metadata file contains only the local items and no Instagram items
+#### Scenario: Local and posted items are written
+- **WHEN** a grid with local planned items and imported posted tiles is saved
+- **THEN** the metadata file contains both (each with a `localImagePath`), and any item without a local file is excluded
 
-#### Scenario: Restored grid contains the local items
+#### Scenario: Restored grid matches what was saved
 - **WHEN** the grid is reloaded from storage
-- **THEN** the restored local items match what was saved (id, source, gridType, localImagePath, orderIndex)
+- **THEN** the restored items match what was saved (id, source, gridType, localImagePath, orderIndex), with local planned items above imported posted items
 
 ### Requirement: Imported image files are kept in storage
 Persisting metadata MUST NOT remove or move the imported image files; the files referenced by `localImagePath` SHALL remain in app storage so restored items can display them.
